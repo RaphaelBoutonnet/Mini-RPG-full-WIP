@@ -311,7 +311,8 @@ void	ft_chose_enemy(int enemynumber, Mob *enemyptr)
 void	ft_atk(char *nomperso)
 {
 	struct termios    old;
-	char            c[3] = {0};
+	char            c[3];
+
 	old = *setup(&old);
 
 	Perso player;
@@ -368,17 +369,18 @@ void	ft_atk(char *nomperso)
 	mob2.xa = 11 + rand() % 39;
 	mob2.ya = 11 + rand() % 19;
 
+	write(1, "\033[2J\033[H\033[?25l", 13); // Efface l'ecran du terminal et le curseur
+	print_key(c, 3);
+	write(1, "\nUse arrows to move, D to attack, E to make the enemy respawn.", 61);
+	ft_print_object('O', xa, ya);
+	ft_print_object('>', xa + 1, ya);
+	ft_show_enemy(mob1ptr);
+	ft_show_enemy(mob2ptr);
+
 	while ((player.hp > 0) && (success != 1)/* Condition d'arrêt, à modifier pour la suite.*/)
 	{
-		write(1, "\033[2J\033[H\033[?25l", 13); // Efface l'ecran du terminal et le curseur
-		print_key(c, 3);
-		write(1, "\nUse arrows to move, D to attack, E to make the enemy respawn.", 61);
-		ft_print_object('O', xa, ya);
-		ft_print_object('>', xa + 1, ya);
-		ft_show_enemy(mob1ptr);
-		ft_show_enemy(mob2ptr);
-	    	while (c[0] != 99)
-	    	{
+	    /*	while (c[0] != 99 // Ancienne condition)
+	    	{ */
 			ft_print_map();
 			if (ft_death_check(mob1ptr, xa, ya) || ft_death_check(mob2ptr, xa, ya))
 			{
@@ -523,113 +525,115 @@ void	ft_atk(char *nomperso)
 				ft_show_enemy(mob1ptr);
 			if (mob2.alive == 1)
 				ft_show_enemy(mob2ptr);
-			fflush(stdout);//vide le tampon de sortie (merci google)	
-    		}
-    		tcsetattr(STDIN_FILENO, TCSAFLUSH, &old);
-		write(1, "\033[2J\033[H\033[?25l", 13); // Efface l'ecran du terminal et le curseur
-
-////////////////////////////////////////
-
-		ft_exp(enemynumber, playerptr);
-		nspell = (player.lvl) + 1;
-		if (enemynumber > 0 && enemy.hp <= 0)
-			write(1, "\nTu as tue l'ennemi.", 21);
-		ft_chose_enemy(enemynumber, enemyptr);
-		enemyhpmax = ft_itoa(enemy.hp);
-		write(1, "\nUn ennemi attaque, defends-toi !\n", 35);
-		while ((enemy.hp > 0) && (player.hp > 0))
-		{
-			enemyhpbuffer = ft_itoa(enemy.hp);
-			enemydefbuffer = ft_itoa(enemy.def);
-			enemydmgbuffer = ft_itoa(enemy.dmg);
-			write(1, "\n=======================\n", 25);
-			write(1, "PV de l'ennemi : ", 18);
-			ft_put_str(enemyhpbuffer);
-			write(1, " / ", 3);
-			ft_put_str(enemyhpmax);
-			write(1, "\n-----------------------\n", 25);
-			write(1, "DEF : ", 6);
-			ft_put_str(enemydefbuffer);
-			write(1, "\n-----------------------\n", 25);
-			write(1, "ATK : ", 6);
-			ft_put_str(enemydmgbuffer);
-			write(1, "\n=======================\n", 25);
-			free(enemyhpbuffer);
-			free(enemydefbuffer);
-			free(enemydmgbuffer);
-			// Affiche les PV de l'ennemi.
-
-			ft_show_spells(nspell - 1/*Nombre de spells actuellement débloqués à ce stade*/);
-
-			playerhpbuffer = ft_itoa(player.hp);
-			playerdefbuffer = ft_itoa(player.def);
-			write(1, "\n=======================\n", 25);
-			write(1, "Tes PV : ", 9);
-			ft_put_str(playerhpbuffer);
-			write(1, "\n-----------------------\n", 25);
-			write(1, "DEF : ", 6);
-			ft_put_str(playerdefbuffer);
-			write(1, "\n=======================\n", 25);
-			free(playerhpbuffer);
-			free(playerdefbuffer);
-			// Affiche les PV du player.
-			
-			ft_show_exp(playerptr);
-			// Affiche l'xp du player.
-
-			write(1, "\nQuel sort utilises-tu ?\n", 26);
-			c[0] = 30;
-			while (c[0] < 49 || c[0] > 52)
-			{
-				get_key(c, 3);
-				fflush(stdout);
-				if ((!(c[0] >= 49 && c[0] <= 52)) || ((c[0] - '0') > nspell))
+			fflush(stdout);//vide le tampon de sortie (merci google)
+			if (mob1.alive == 0 || mob2.alive == 0)
 				{
-					c[0] = ft_wrong_key(i/*, enemyptr, playerptr*/, ptri);
-					i++;
-				}
-				// Si la touche entrée n'est pas entre 1 et 4, ft_wrong_spell, et on retourne au début de la boucle while. On réaffiche les pv de l'ennemi.
-					/* Ce qui suit n'est pas utile dans mon cas je crois.
-					if (size)
-						print_key(c, size); */ // De quoi voir sur quelle touche j'ai appuyé, à enlever dans la version finale.
-						/**/
-			}
-			// Fin de récupération d'input
+					ft_exp(enemynumber, playerptr);
+					nspell = (player.lvl) + 1;
+					if (enemynumber > 0 && enemy.hp <= 0)
+						write(1, "\nTu as tue l'ennemi.", 21);
+					ft_chose_enemy(enemynumber, enemyptr);
+					enemyhpmax = ft_itoa(enemy.hp);
+					write(1, "\nUn ennemi attaque, defends-toi !\n", 35);
+					while ((enemy.hp > 0) && (player.hp > 0))
+					{
+						enemyhpbuffer = ft_itoa(enemy.hp);
+						enemydefbuffer = ft_itoa(enemy.def);
+						enemydmgbuffer = ft_itoa(enemy.dmg);
+						write(1, "\n=======================\n", 25);
+						write(1, "PV de l'ennemi : ", 18);
+						ft_put_str(enemyhpbuffer);
+						write(1, " / ", 3);
+						ft_put_str(enemyhpmax);
+						write(1, "\n-----------------------\n", 25);
+						write(1, "DEF : ", 6);
+						ft_put_str(enemydefbuffer);
+						write(1, "\n-----------------------\n", 25);
+						write(1, "ATK : ", 6);
+						ft_put_str(enemydmgbuffer);
+						write(1, "\n=======================\n", 25);
+						free(enemyhpbuffer);
+						free(enemydefbuffer);
+						free(enemydmgbuffer);
+						// Affiche les PV de l'ennemi.
 
-			if (c[0] == '2') // On vérifie si le sort Toucher du phenix a été choisi, car il peut être lancé sur soi-même pour se soigner.
-			{
-				write(1, "\nSur qui l'utiliser ?\n\n1 : Moi\n2 : L'ennemi", 44);
-				targetbuffer = 'a';
-				c[0] = 'a';
-				while (targetbuffer != 'S')
-				{
-					get_key(c, 3);
-					fflush(stdout);
-					if (c[0] != '1' && c[0] != '2')
-						write(1, "\nMauvaise touche !\n", 20);
-					if (c[0] == 49)
-					{
-						ft_use_spell('2', enemyptr, playerptr, 1/*Sur le player*/);
-						targetbuffer = 'S';
+						ft_show_spells(nspell - 1/*Nombre de spells actuellement débloqués à ce stade*/);
+
+						playerhpbuffer = ft_itoa(player.hp);
+						playerdefbuffer = ft_itoa(player.def);
+						write(1, "\n=======================\n", 25);
+						write(1, "Tes PV : ", 9);
+						ft_put_str(playerhpbuffer);
+						write(1, "\n-----------------------\n", 25);
+						write(1, "DEF : ", 6);
+						ft_put_str(playerdefbuffer);
+						write(1, "\n=======================\n", 25);
+						free(playerhpbuffer);
+						free(playerdefbuffer);
+						// Affiche les PV du player.
+						
+						ft_show_exp(playerptr);
+						// Affiche l'xp du player.
+
+						write(1, "\nQuel sort utilises-tu ?\n", 26);
+						c[0] = 30;
+						while (c[0] < 49 || c[0] > 52)
+						{
+							get_key(c, 3);
+							fflush(stdout);
+							if ((!(c[0] >= 49 && c[0] <= 52)) || ((c[0] - '0') > nspell))
+							{
+								c[0] = ft_wrong_key(i/*, enemyptr, playerptr*/, ptri);
+								i++;
+							}
+							// Si la touche entrée n'est pas entre 1 et 4, ft_wrong_spell, et on retourne au début de la boucle while. On réaffiche les pv de l'ennemi.
+								/* Ce qui suit n'est pas utile dans mon cas je crois.
+								if (size)
+									print_key(c, size); */ // De quoi voir sur quelle touche j'ai appuyé, à enlever dans la version finale.
+									/**/
+						}
+						// Fin de récupération d'input
+
+						if (c[0] == '2') // On vérifie si le sort Toucher du phenix a été choisi, car il peut être lancé sur soi-même pour se soigner.
+						{
+							write(1, "\nSur qui l'utiliser ?\n\n1 : Moi\n2 : L'ennemi", 44);
+							targetbuffer = 'a';
+							c[0] = 'a';
+							while (targetbuffer != 'S')
+							{
+								get_key(c, 3);
+								fflush(stdout);
+								if (c[0] != '1' && c[0] != '2')
+									write(1, "\nMauvaise touche !\n", 20);
+								if (c[0] == 49)
+								{
+									ft_use_spell('2', enemyptr, playerptr, 1/*Sur le player*/);
+									targetbuffer = 'S';
+								}
+								else if (c[0] == 50)
+								{
+									ft_use_spell('2', enemyptr, playerptr, 0/*Sur l'ennemi*/);
+									targetbuffer = 'S';
+								}
+							}
+						}
+						else
+							ft_use_spell(c[0], enemyptr, playerptr, 0/*Sur l'ennemi*/);
+						if (enemy.hp > 0)
+							ft_enemy_atk(enemyptr, playerptr);
+						if (player.hp <= 0)
+							defeat = 1;
 					}
-					else if (c[0] == 50)
-					{
-						ft_use_spell('2', enemyptr, playerptr, 0/*Sur l'ennemi*/);
-						targetbuffer = 'S';
-					}
+					enemynumber++;
+					if (enemynumber >= enemymax)
+						success = 1;
 				}
-			}
-			else
-				ft_use_spell(c[0], enemyptr, playerptr, 0/*Sur l'ennemi*/);
-			if (enemy.hp > 0)
-				ft_enemy_atk(enemyptr, playerptr);
-			if (player.hp <= 0)
-				defeat = 1;
-		}
-		enemynumber++;
-		if (enemynumber >= enemymax)
-			success = 1;
+    	/*	} */
+		c[0] = 0;
+		c[1] = 0;
+		c[2] = 0;
 	}
+	write(1, "\033[2J\033[H\033[?25l", 13); // Efface l'ecran du terminal et le curseur
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &old);
 	if (success == 1)
 	{
