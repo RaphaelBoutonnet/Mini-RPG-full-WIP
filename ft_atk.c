@@ -7,22 +7,16 @@ struct termios    *setup(struct termios *old)
     tcgetattr(STDIN_FILENO, &raw);//permet de recuperer les attributs du terminal
     tcgetattr(STDIN_FILENO, old);
     raw.c_lflag &= ~(ECHO | ICANON);//desactive le mode canonique
-    raw.c_cc[VMIN] = 0;//nombre min de caractere a recevoir
+    raw.c_cc[VMIN] = 1;//nombre min de caractere a recevoir
     raw.c_cc[VTIME] = 0;//attente a 0
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);//defini les attributs terminal
     return (old);
 }
 
-int    get_key(char *buff, int length)
-{
-    int nb = read(0, buff, length);
-    return (nb);
-}
-
 void    print_key(char    *buff, int size)
 {
     printf("lettre : %d, %d, %d, %d\n", buff[0], buff[1], buff[2], size);
-    fflush(stdout);//vide le tampon de sortie (merci google)
+    // fflush(stdout);//vide le tampon de sortie (merci google)
 }
 
 int	ft_count_len(int nb)
@@ -310,15 +304,26 @@ void	ft_chose_enemy(int enemynumber, Mob *enemyptr)
 
 void	ft_atk(char *nomperso)
 {
-	struct termios    old;
-	char            c[3];
 
+	int    get_key(char *buff, int length)
+	{
+		int nb = read(0, buff, length);
+	    	return (nb);
+	}
+
+	void	flush(void)
+	{
+		fflush(stdout);
+	}
+
+	struct termios    old;
+	char            c[3] = {0};
 	old = *setup(&old);
 
 	Perso player;
 	Perso *playerptr = &player;
 
-	// Copie nomperso dans player.name
+	// Debut de copie de nomperso dans player.name
 	int icopy = 0;
 	while (nomperso[icopy])
 	{
@@ -379,8 +384,6 @@ void	ft_atk(char *nomperso)
 
 	while ((player.hp > 0) && (success != 1)/* Condition d'arrêt, à modifier pour la suite.*/)
 	{
-	    /*	while (c[0] != 99 // Ancienne condition)
-	    	{ */
 			ft_print_map();
 			if (ft_death_check(mob1ptr, xa, ya) || ft_death_check(mob2ptr, xa, ya))
 			{
@@ -390,6 +393,7 @@ void	ft_atk(char *nomperso)
 					ft_print_object(' ', 20, 20);
 					write(1, "YOU ARE DEAD - Press E to revive", 32);
 					get_key(c, 3);
+					flush();
 				}
 				xa = 15;
 				ya = 15;
@@ -401,9 +405,10 @@ void	ft_atk(char *nomperso)
 				ft_show_enemy(mob1ptr);
 				ft_show_enemy(mob2ptr);
 				ft_print_map();
-				fflush(stdout);//vide le tampon de sortie (merci google)	
+				flush();//vide le tampon de sortie (merci google)	
 			}
 	        	get_key(c, 3);
+			flush();
 			if ((c[2] >= 65 && c[2] <= 68) && c[0] == 27)
 			{
 				write(1, "\033[2J\033[H\033[?25l", 13); // Efface l'ecran du terminal et le curseur
@@ -525,9 +530,9 @@ void	ft_atk(char *nomperso)
 				ft_show_enemy(mob1ptr);
 			if (mob2.alive == 1)
 				ft_show_enemy(mob2ptr);
-			fflush(stdout);//vide le tampon de sortie (merci google)
-			if (mob1.alive == 0 || mob2.alive == 0)
+			while (mob1.alive == 0 || mob2.alive == 0)
 				{
+					write(1, "\033[2J\033[H\033[?25l", 13); // Efface l'ecran du terminal et le curseur
 					ft_exp(enemynumber, playerptr);
 					nspell = (player.lvl) + 1;
 					if (enemynumber > 0 && enemy.hp <= 0)
@@ -537,6 +542,7 @@ void	ft_atk(char *nomperso)
 					write(1, "\nUn ennemi attaque, defends-toi !\n", 35);
 					while ((enemy.hp > 0) && (player.hp > 0))
 					{
+						print_key(c, 3); // Pour debuggage car une touche est inputee en permanence
 						enemyhpbuffer = ft_itoa(enemy.hp);
 						enemydefbuffer = ft_itoa(enemy.def);
 						enemydmgbuffer = ft_itoa(enemy.dmg);
@@ -576,21 +582,19 @@ void	ft_atk(char *nomperso)
 						// Affiche l'xp du player.
 
 						write(1, "\nQuel sort utilises-tu ?\n", 26);
-						c[0] = 30;
+						c[0] = 0;
+						c[1] = 0;
+						c[2] = 0;
 						while (c[0] < 49 || c[0] > 52)
 						{
 							get_key(c, 3);
-							fflush(stdout);
+							flush();
 							if ((!(c[0] >= 49 && c[0] <= 52)) || ((c[0] - '0') > nspell))
 							{
 								c[0] = ft_wrong_key(i/*, enemyptr, playerptr*/, ptri);
 								i++;
 							}
 							// Si la touche entrée n'est pas entre 1 et 4, ft_wrong_spell, et on retourne au début de la boucle while. On réaffiche les pv de l'ennemi.
-								/* Ce qui suit n'est pas utile dans mon cas je crois.
-								if (size)
-									print_key(c, size); */ // De quoi voir sur quelle touche j'ai appuyé, à enlever dans la version finale.
-									/**/
 						}
 						// Fin de récupération d'input
 
@@ -602,7 +606,7 @@ void	ft_atk(char *nomperso)
 							while (targetbuffer != 'S')
 							{
 								get_key(c, 3);
-								fflush(stdout);
+								flush();
 								if (c[0] != '1' && c[0] != '2')
 									write(1, "\nMauvaise touche !\n", 20);
 								if (c[0] == 49)
@@ -625,10 +629,18 @@ void	ft_atk(char *nomperso)
 							defeat = 1;
 					}
 					enemynumber++;
+					write(1, "\033[2J\033[H\033[?25l", 13); // Efface l'ecran du terminal et le curseur
+					print_key(c, 3);
+					write(1, "\nUse arrows to move, D to attack, E to make the enemy respawn.", 61);
+					ft_print_object('O', xa, ya);
+					ft_show_enemy(mob1ptr);
+					ft_show_enemy(mob2ptr);
+					ft_print_map();
+					mob1.alive = 1;
+					mob2.alive = 1;
 					if (enemynumber >= enemymax)
 						success = 1;
 				}
-    	/*	} */
 		c[0] = 0;
 		c[1] = 0;
 		c[2] = 0;
